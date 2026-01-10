@@ -32,6 +32,8 @@ export function ContactSection() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        // Add timeout and signal for better error handling
+        signal: AbortSignal.timeout(30000), // 30 second timeout
       })
       
       // Check if response is ok before parsing JSON
@@ -69,7 +71,9 @@ export function ContactSection() {
       console.error('Error sending message:', error)
       setSubmitStatus('error')
       // Provide more specific error messages
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setErrorMessage('Request timed out. Please try again.')
+      } else if (error instanceof TypeError && error.message.includes('fetch')) {
         setErrorMessage('Unable to reach server. Please check your connection and try again.')
       } else {
         setErrorMessage('Network error. Please check your connection and try again.')

@@ -1,6 +1,10 @@
 import * as nodemailer from 'nodemailer';
 import { NextResponse } from 'next/server';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     // Check if Gmail credentials are set
@@ -108,12 +112,23 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Email sending error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    
+    // Log more details for debugging in Vercel logs
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      hasGmailUser: !!process.env.GMAIL_USER,
+      hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD
+    });
     
     return NextResponse.json(
       { 
         error: 'Failed to send email',
         details: errorMessage.includes('Invalid login') 
           ? 'Gmail authentication failed. Please check your credentials.' 
+          : errorMessage.includes('ENOTFOUND')
+          ? 'Network error. Unable to connect to email server.'
           : errorMessage
       },
       { status: 500 }
