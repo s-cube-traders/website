@@ -15,10 +15,48 @@ export function ContactSection() {
     business: "",
     message: "",
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log(formData)
+    setIsSubmitting(true)
+    setSubmitStatus('idle')
+    setErrorMessage('')
+    
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        setSubmitStatus('success')
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          business: "",
+          message: "",
+        })
+      } else {
+        setSubmitStatus('error')
+        setErrorMessage(result.details || result.error || 'Failed to send message')
+        console.error('API Error:', result)
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      setSubmitStatus('error')
+      setErrorMessage('Network error. Please check your connection and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -44,7 +82,7 @@ export function ContactSection() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-semibold text-foreground">+91 98765 43210</p>
+                  <p className="font-semibold text-foreground">+91 949 979 4560</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
@@ -53,7 +91,7 @@ export function ContactSection() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-semibold text-foreground">hello@scubetraders.com</p>
+                  <p className="font-semibold text-foreground">s.cube.traders.info@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
@@ -95,7 +133,7 @@ export function ContactSection() {
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">Phone Number</label>
                   <Input
-                    placeholder="+91 98765 43210"
+                    placeholder="+91 949 979 4560"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="bg-secondary/50 border-border rounded-xl h-12"
@@ -121,11 +159,31 @@ export function ContactSection() {
                   className="bg-secondary/50 border-border rounded-xl resize-none"
                 />
               </div>
+              {submitStatus === 'success' && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">
+                  ✅ Message sent successfully! We'll get back to you soon.
+                </div>
+              )}
+              {submitStatus === 'error' && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
+                  <div className="font-semibold mb-1">❌ Failed to send message</div>
+                  {errorMessage && (
+                    <div className="text-xs mt-1 opacity-90">{errorMessage}</div>
+                  )}
+                  <div className="text-xs mt-2">
+                    Please try again or contact us directly at{' '}
+                    <a href="mailto:s.cube.traders.info@gmail.com" className="underline">
+                      s.cube.traders.info@gmail.com
+                    </a>
+                  </div>
+                </div>
+              )}
               <Button
                 type="submit"
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-12 text-base font-medium"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-full h-12 text-base font-medium"
               >
-                Send Message
+                {isSubmitting ? 'Sending...' : 'Send Message'}
               </Button>
             </form>
           </div>
