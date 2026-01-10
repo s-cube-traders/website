@@ -34,9 +34,24 @@ export function ContactSection() {
         body: JSON.stringify(formData),
       })
       
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error response, but handle cases where it might not be JSON
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          errorData = { error: `Server error: ${response.status} ${response.statusText}` }
+        }
+        setSubmitStatus('error')
+        setErrorMessage(errorData.details || errorData.error || 'Failed to send message')
+        console.error('API Error:', errorData)
+        return
+      }
+      
       const result = await response.json()
       
-      if (response.ok) {
+      if (result.success) {
         setSubmitStatus('success')
         setFormData({
           name: "",
@@ -53,7 +68,12 @@ export function ContactSection() {
     } catch (error) {
       console.error('Error sending message:', error)
       setSubmitStatus('error')
-      setErrorMessage('Network error. Please check your connection and try again.')
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setErrorMessage('Unable to reach server. Please check your connection and try again.')
+      } else {
+        setErrorMessage('Network error. Please check your connection and try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
